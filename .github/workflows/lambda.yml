@@ -8,7 +8,7 @@ on:
       - 'lambda/**'
 
 jobs:
-  deploy-lambda: #Name of the job that deploys the Lambda function
+  lambda: #Name of the job that deploys the Lambda function
     runs-on: ubuntu-latest #Runs the job on the latest version of Ubuntu, sets or specifies the environment for the job
     steps:
     - uses: actions/checkout@v2
