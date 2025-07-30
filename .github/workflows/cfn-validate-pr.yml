@@ -2,9 +2,15 @@ name: Validate CloudFormation PR
 
 on:
   pull_request:
-    types: [opened, synchronize, closed]
+    types:
+      - opened
+      - synchronize
+      - reopened
     paths:
       - 'cloudformation/**'
+  pull_request_target:
+    types:
+      - closed
 
 permissions:
   pull-requests: write
@@ -12,8 +18,8 @@ permissions:
 
 jobs:
   validate-cfn:
-    runs-on: ubuntu-latest
     if: github.event.pull_request.merged != true
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -28,12 +34,12 @@ jobs:
         run: |
           aws cloudformation validate-template --template-body file://cloudformation/s3-bucket.yml
 
-      - name: Deploy our stack
+      - name: Deploy CloudFormation Stack
         run: |
           stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
           aws cloudformation deploy \
             --template-file cloudformation/s3-bucket.yml \
-            --stack-name pr-test-stack \
+            --stack-name "$stack_name" \
             --parameter-overrides EnvironmentName=test \
             --capabilities CAPABILITY_IAM
 
@@ -46,13 +52,16 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'CloudFormation test stack deployed. Stack name: pr-test-stack-${{ github.event.pull_request.number }}'
+              body: '✅ CloudFormation test stack deployed. Stack name: pr-test-stack-${{ github.event.pull_request.number }}'
             })
 
   cleanup-on-merge:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
+      - name: Debug merge
+        run: echo "Merged? ${{ github.event.pull_request.merged }}"
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -63,5 +72,6 @@ jobs:
       - name: Delete CloudFormation Stack
         run: |
           stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          echo "Deleting stack: $stack_name"
           aws cloudformation delete-stack --stack-name "$stack_name"
           aws cloudformation wait stack-delete-complete --stack-name "$stack_name"
