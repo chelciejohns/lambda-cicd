@@ -2,6 +2,7 @@ name: Validate CloudFormation PR
 
 on:
   pull_request:
+    types: [opened, synchronize, closed]
     paths:
       - 'cloudformation/**'
 
@@ -12,6 +13,7 @@ permissions:
 jobs:
   validate-cfn:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged != true
     steps:
       - uses: actions/checkout@v2
 
